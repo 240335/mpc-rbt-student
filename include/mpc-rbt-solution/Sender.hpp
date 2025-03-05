@@ -21,6 +21,8 @@ public:
     create();
     configure();
     bind();
+    
+    callback = [this] { onDataTimerTick(); };
   }
 
   void run();

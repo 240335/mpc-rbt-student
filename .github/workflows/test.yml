@@ -34,7 +34,7 @@ jobs:
         with:
           fetch-depth: 1
           repository: Robotics-BUT/mpc-rbt-simulator
-          path: mpc-rbt-simulator
+          path: mpc_rbt_simulator
       - name: Install required ROS 2 dependencies
         shell: bash
         run: |
@@ -69,7 +69,7 @@ jobs:
         with:
           fetch-depth: 1
           repository: Robotics-BUT/mpc-rbt-simulator
-          path: mpc-rbt-simulator
+          path: mpc_rbt_simulator
       - name: Install required ROS 2 dependencies
         shell: bash
         run: |
@@ -80,7 +80,7 @@ jobs:
         run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && colcon build
       - name: Run tests
         shell: bash
-        run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && colcon test --ctest-args tests --packages-select mpc-rbt-solution
+        run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && colcon test --ctest-args tests --packages-select mpc_rbt_solution
       - name: Show test results
         shell: bash
         run: source /opt/ros/${{ matrix.rosdistro }}/setup.bash && colcon test-result --verbose --all

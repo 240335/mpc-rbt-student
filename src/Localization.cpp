@@ -1,4 +1,6 @@
 #include "mpc_rbt_simulator/RobotConfig.hpp"
+#include "Localization.hpp"
+
 
 LocalizationNode::LocalizationNode() : 
     rclcpp::Node("localization_node"), 
@@ -10,10 +12,11 @@ LocalizationNode::LocalizationNode() :
     // add code here
 
     // Subscriber for joint_states
-    // add code here
+    joint_subscriber_ = this->create_subscription<sensor_msgs::msg::JointState>(
+        "/joint_states", 1, std::bind(&LocalizationNode::jointCallback, this, std::placeholders::_1));
 
     // Publisher for odometry
-    // add code here
+    odometry_publisher_ = this->create_publisher<nav_msgs::msg::Odometry>("odometry", 10);
 
     // tf_briadcaster 
     tf_broadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(*this);
@@ -23,18 +26,19 @@ LocalizationNode::LocalizationNode() :
 
 void LocalizationNode::jointCallback(const sensor_msgs::msg::JointState & msg) {
     // add code here
-
-
-    // ********
-    // * Help *
-    // ********
-    /*
     auto current_time = this->get_clock()->now();
+    double dt = (current_time - last_time_).seconds();
+
+    // Print incoming data for verification
+    //RCLCPP_INFO(this->get_logger(), "Received JointState message:");
+    //RCLCPP_INFO(this->get_logger(), "Position: [%f, %f]", msg.position[0], msg.position[1]);
+    //RCLCPP_INFO(this->get_logger(), "Velocity: [%f, %f]", msg.velocity[0], msg.velocity[1]);
 
     updateOdometry(msg.velocity[0], msg.velocity[1], dt);
     publishOdometry();
     publishTransform();
-    */
+
+    last_time_ = current_time;
 }
 
 void LocalizationNode::updateOdometry(double left_wheel_vel, double right_wheel_vel, double dt) {
@@ -43,31 +47,47 @@ void LocalizationNode::updateOdometry(double left_wheel_vel, double right_wheel_
     // ********
     // * Help *
     // ********
-    /*
-    double linear =  ;
-    double angular = ;  //robot_config::HALF_DISTANCE_BETWEEN_WHEELS
+    
+    double linear = (left_wheel_vel + right_wheel_vel) / 2.0;
+    double angular = (right_wheel_vel - left_wheel_vel) / 2*robot_config::HALF_DISTANCE_BETWEEN_WHEELS;
+
+    odometry_.child_frame_id = "base_link";
+    odometry_.header.frame_id = "map";
 
     tf2::Quaternion tf_quat;
     tf2::fromMsg(odometry_.pose.pose.orientation, tf_quat);
     double roll, pitch, theta;
     tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, theta);
 
-    theta = std::atan2(std::sin(theta), std::cos(theta));
+    theta = std::atan2(std::sin(theta + angular * dt), std::cos(theta + angular *dt));
 
     tf2::Quaternion q;
-    q.setRPY(0, 0, 0);
-    */
+    q.setRPY(0, 0, theta);
+    odometry_.pose.pose.orientation = tf2::toMsg(q);
+
+    odometry_.twist.twist.linear.x = linear;
+    odometry_.twist.twist.angular.z = angular;
+
+    // Update position
+    odometry_.pose.pose.position.x += linear * dt * std::cos(theta);
+    odometry_.pose.pose.position.y += linear * dt * std::sin(theta);
+
 }
 
 void LocalizationNode::publishOdometry() {
-    // add code here
+    odometry_.header.stamp = this->get_clock()->now();
+    odometry_publisher_->publish(odometry_);
 }
 
 void LocalizationNode::publishTransform() {
-    // add code here
-    
-    // ********
-    // * Help *
-    // ********
-    //tf_broadcaster_->sendTransform(t);
+    geometry_msgs::msg::TransformStamped t;
+    t.header.stamp = this->get_clock()->now();
+    t.header.frame_id = "map";
+    t.child_frame_id = "base_link";
+    t.transform.translation.x = odometry_.pose.pose.position.x;
+    t.transform.translation.y = odometry_.pose.pose.position.y;
+    t.transform.translation.z = odometry_.pose.pose.position.z;
+    t.transform.rotation = odometry_.pose.pose.orientation;
+
+    tf_broadcaster_->sendTransform(t);
 }

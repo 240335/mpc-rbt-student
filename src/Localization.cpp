@@ -51,7 +51,7 @@ void LocalizationNode::updateOdometry(double left_wheel_vel, double right_wheel_
     double right_wheel_vel_lin = right_wheel_vel * robot_config::WHEEL_RADIUS;
 
     double linear = (left_wheel_vel_lin + right_wheel_vel_lin) / 2.0;
-    double angular = (right_wheel_vel_lin - left_wheel_vel_lin) / (2.0*robot_config::HALF_DISTANCE_BETWEEN_WHEELS);
+    double angular = -(right_wheel_vel_lin - left_wheel_vel_lin) / (2.0*robot_config::HALF_DISTANCE_BETWEEN_WHEELS);
 
     odometry_.child_frame_id = "base_link";
     odometry_.header.frame_id = "map";

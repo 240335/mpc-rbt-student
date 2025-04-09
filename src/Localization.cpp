@@ -28,6 +28,7 @@ void LocalizationNode::jointCallback(const sensor_msgs::msg::JointState & msg) {
     // add code here
     auto current_time = this->get_clock()->now();
     double dt = (current_time - last_time_).seconds();
+    last_time_ = current_time;
 
     // Print incoming data for verification
     //RCLCPP_INFO(this->get_logger(), "Received JointState message:");
@@ -37,8 +38,6 @@ void LocalizationNode::jointCallback(const sensor_msgs::msg::JointState & msg) {
     updateOdometry(msg.velocity[0], msg.velocity[1], dt);
     publishOdometry();
     publishTransform();
-
-    last_time_ = current_time;
 }
 
 void LocalizationNode::updateOdometry(double left_wheel_vel, double right_wheel_vel, double dt) {
@@ -48,30 +47,32 @@ void LocalizationNode::updateOdometry(double left_wheel_vel, double right_wheel_
     // * Help *
     // ********
     
-    double linear = (left_wheel_vel + right_wheel_vel) / 2.0;
-    double angular = (right_wheel_vel - left_wheel_vel) / 2*robot_config::HALF_DISTANCE_BETWEEN_WHEELS;
+    double left_wheel_vel_lin = left_wheel_vel * robot_config::WHEEL_RADIUS;
+    double right_wheel_vel_lin = right_wheel_vel * robot_config::WHEEL_RADIUS;
+
+    double linear = (left_wheel_vel_lin + right_wheel_vel_lin) / 2.0;
+    double angular = (right_wheel_vel_lin - left_wheel_vel_lin) / (2.0*robot_config::HALF_DISTANCE_BETWEEN_WHEELS);
 
     odometry_.child_frame_id = "base_link";
     odometry_.header.frame_id = "map";
 
     tf2::Quaternion tf_quat;
     tf2::fromMsg(odometry_.pose.pose.orientation, tf_quat);
-    double roll, pitch, theta;
-    tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, theta);
+    double roll, pitch, yaw;
+    tf2::Matrix3x3(tf_quat).getRPY(roll, pitch, yaw);
 
-    theta = std::atan2(std::sin(theta + angular * dt), std::cos(theta + angular *dt));
+    yaw += angular * dt; 
+    // Update position
+    odometry_.pose.pose.position.x += linear * dt * std::cos(yaw);
+    odometry_.pose.pose.position.y += linear * dt * std::sin(yaw);
 
     tf2::Quaternion q;
-    q.setRPY(0, 0, theta);
+    q.setRPY(0, 0, yaw);
+    //q.normalize();
     odometry_.pose.pose.orientation = tf2::toMsg(q);
 
-    odometry_.twist.twist.linear.x = linear;
-    odometry_.twist.twist.angular.z = angular;
-
-    // Update position
-    odometry_.pose.pose.position.x += linear * dt * std::cos(theta);
-    odometry_.pose.pose.position.y += linear * dt * std::sin(theta);
-
+    //odometry_.twist.twist.linear.x = linear;
+    //odometry_.twist.twist.angular.z = angular;
 }
 
 void LocalizationNode::publishOdometry() {

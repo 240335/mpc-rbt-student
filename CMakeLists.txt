@@ -26,6 +26,7 @@ set(dependencies
 add_library(${PROJECT_NAME} SHARED
   src/KeyboardControl.cpp
   src/Localization.cpp
+  src/Planning.cpp
 )
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 install(TARGETS ${PROJECT_NAME}
@@ -47,8 +48,13 @@ add_executable(localization src/localization_node.cpp)
 target_link_libraries(localization ${PROJECT_NAME})
 install(TARGETS localization DESTINATION lib/${PROJECT_NAME})
 
+add_executable(planning src/planning_node.cpp)
+target_link_libraries(planning ${PROJECT_NAME})
+install(TARGETS planning DESTINATION lib/${PROJECT_NAME})
+
 target_compile_features(keyboard_control PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-target_compile_features(localization PUBLIC c_std_99 cxx_std_17)  
+target_compile_features(localization PUBLIC c_std_99 cxx_std_17)
+target_compile_features(planning PUBLIC c_std_99 cxx_std_17)    
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

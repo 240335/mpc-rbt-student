@@ -2,10 +2,12 @@
 #define PLANNING_HPP
 
 #include <vector>
+#include <queue>
 #include <algorithm>
 #include <math.h>
 
 #include "rclcpp/rclcpp.hpp"
+#include "geometry_msgs/msg/pose_stamped.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "nav_msgs/srv/get_map.hpp"
 #include "nav_msgs/srv/get_plan.hpp"

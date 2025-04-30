@@ -11,6 +11,7 @@ find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(mpc_rbt_simulator REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(nav2_msgs REQUIRED)
 
 # Define include directories for the compiler
 include_directories(PUBLIC
@@ -22,11 +23,13 @@ set(dependencies
   rclcpp
   geometry_msgs
   mpc_rbt_simulator
-  nav_msgs)
+  nav_msgs
+  nav2_msgs)
 add_library(${PROJECT_NAME} SHARED
   src/KeyboardControl.cpp
   src/Localization.cpp
   src/Planning.cpp
+  src/MotionControl.cpp
 )
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 install(TARGETS ${PROJECT_NAME}
@@ -52,9 +55,14 @@ add_executable(planning src/planning_node.cpp)
 target_link_libraries(planning ${PROJECT_NAME})
 install(TARGETS planning DESTINATION lib/${PROJECT_NAME})
 
+add_executable(motion_control src/motion_control_node.cpp)
+target_link_libraries(motion_control ${PROJECT_NAME})
+install(TARGETS motion_control DESTINATION lib/${PROJECT_NAME})
+
 target_compile_features(keyboard_control PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 target_compile_features(localization PUBLIC c_std_99 cxx_std_17)
-target_compile_features(planning PUBLIC c_std_99 cxx_std_17)    
+target_compile_features(planning PUBLIC c_std_99 cxx_std_17)
+target_compile_features(motion_control PUBLIC c_std_99 cxx_std_17)       
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
